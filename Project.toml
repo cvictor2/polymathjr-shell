@@ -1,0 +1,7 @@
+[deps]
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
