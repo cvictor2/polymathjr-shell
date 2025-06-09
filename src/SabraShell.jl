@@ -33,6 +33,7 @@
 module SabraShell
 
 using Random, JLD2, Printf
+using ProgressMeter
 
 # ───────────────────── Parameter container ───────────────────────────
 """
@@ -136,7 +137,7 @@ function run_simulation(; T=10.0, dt=1e-6, method::Symbol=:RK4, saveat=1e-4,
     t_vec[1] = 0.0;  u_vec[1] = copy(u);  save_idx = 2
     @printf("%s integration, dt = %.1e, steps = %d\n", method, dt, n_steps)
 
-    for step in 1:n_steps
+    @showprogress for step in 1:n_steps
         method === :Euler ? step_euler!(u, tmp, pars, dt) : step_rk4!(u, k1, k2, k3, k4, tmp, pars, dt)
 
         if step % save_skip == 0
