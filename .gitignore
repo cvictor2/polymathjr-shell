@@ -1,2 +1,4 @@
 data/*
 notebooks/*backup*
+.vscode/*
+.DS_Store
