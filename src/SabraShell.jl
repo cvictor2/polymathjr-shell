@@ -1,34 +1,37 @@
-# sabra_shell_model_manual.jl
-# =====================================================================
-# A **self-contained, pedagogical** implementation of the complex Sabra shell
-# model of turbulence with fixed-step explicit integrators (Euler / RK4).
+# SabraShell.jl
+# ================================================================
+# A short, classroom-oriented implementation of the complex Sabra
+# shell model with two explicit, fixed-step integrators (Euler and RK4).
 #
-# ---------------------------------------------------------------------
-#  Governing ODE  (standard energy–conserving form)
-# ---------------------------------------------------------------------
-# For shells n = 1…N with wavenumbers kₙ = k₀ λⁿ⁻¹, define complex amplitudes uₙ(t)
-# satisfying
+# ----------------------------------------------------------------
+# Governing ODE (energy-conserving form)
+# ----------------------------------------------------------------
+# Index the shells by n = 1, …, N and define the wave numbers coefficients
+#     k_n = k0 * lambda_factor^(n-1)
+# together with complex amplitudes u_n(t).  Their evolution is
 #
-#     duₙ/dt = i [  a kₙ₊₁ uₙ₊₂ uₙ₊₁*                        (forward transfer)
-#                  + b kₙ   uₙ₊₁ uₙ₋₁*                      (mixed transfer)
-#                  − c kₙ₋₁ uₙ₋₁ uₙ₋₂      ]              (backward transfer)
-#              − nu kₙ² uₙ                              (viscous dissipation)
-#              + Fₙ .                                  (external forcing)
+#     d u_n / dt =  i [   a k_{n+1} u_{n+2} * conj(u_{n+1})   (forward)
+#                       + b k_n     u_{n+1} * conj(u_{n-1})   (mixed)
+#                       - c k_{n-1} u_{n-1} * u_{n-2}         (backward) ]
+#                  - nu * k_n^2 * u_n                         (viscous)
+#                  + F_n                                      (forcing)
 #
-# where * denotes complex conjugation.  Constants (a,b,c) = (1, −½, −½)
-# conserve both energy and helicity when nu = F = 0.
+# where conj(·) is complex conjugation.  With (a, b, c) = (1.0, -0.5, -0.5)
+# both total energy and helicity are conserved when nu and F are zero.
 #
-# Shells outside 1…N are treated as zero; forcing by default acts on shells 1
-# and 2 with equal and opposite amplitudes (F, −F).
+# Shells outside 1 … N are set to zero; by default the forcing acts on
+# shells 1 and 2 with equal magnitude and opposite sign.
 #
-# ---------------------------------------------------------------------
-#  Quick-start for students
-# ---------------------------------------------------------------------
-# • **All knobs live in `build_params`** below — k₀, λ, nu, forcing amplitude …
-# • Choose integrator & step in the `run_simulation` call at the bottom.
-# • Plot helpers: `plot_energy`, `plot_spectrum_heatmap`.
-# • Modify the nonlinear terms?  They live in `sabra_rhs!` — just two lines.
-# ---------------------------------------------------------------------
+# ----------------------------------------------------------------
+# Quick start
+# ----------------------------------------------------------------
+# • All user-visible parameters live in `build_params`
+#     (k0, lambda_factor, viscosity, forcing amplitude, …).
+# • Pick the integrator and step size in the `run_simulation` call
+#     (see the driver in scripts/run_sabra.jl).
+# • Plot helpers: `plot_energy`, `plot_helicity`, `plot_spectrum`.
+# • Want to change the physics?  Edit `sabra_rhs!`.
+# ----------------------------------------------------------------
 
 module SabraShell
 
@@ -54,14 +57,14 @@ end
 
 Create a ready-to-use parameter struct.
 Keyword arguments and sensible defaults:
-| kw                | default           | meaning                    |
-|-------------------|-------------------|----------------------------|
-| `N`               | 20                | number of shells           |
-| `k0`              | 2e-4              | smallest wave number       |
-| `lambda_factor`   | 2.0               | geometric spacing λ        |
-| `viscosity`       | 1e-5              | nu                         |
-| `a,b,c`           | 1.0, −0.5, −0.5   | nonlinear coeffs           |
-| `F_amp`           | 1.0               | magnitude of F₁ (F₂ = −F₁) |
+| kw                | default           | meaning                       |
+|-------------------|-------------------|-------------------------------|
+| `N`               | 20                | number of shells              |
+| `k0`              | 2e-4              | shell prefactor               |
+| `lambda_factor`   | 2.0               | intershell ratio              |
+| `viscosity`       | 1e-5              | nu                            |
+| `a,b,c`           | 1.0, −0.5, −0.5   | nonlinear coeffs              |
+| `F_amp`           | 1.0               | magnitude of F_1 (F_2 = −F_1) |
 """
 function build_params(;N=20, k0=2e-4, lambda_factor=2.0,
                        viscosity=1e-5, a=1.0, b=-0.5, c=-0.5,
