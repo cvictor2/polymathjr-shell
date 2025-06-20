@@ -1,4 +1,4 @@
-# Sabra Shell Model 📦
+# Sabra Shell Model
 
 A **self-contained** implementation of the complex Sabra shell
 model of turbulence.  Two explicit integrators (Euler, RK4) and a few plotting
@@ -12,7 +12,7 @@ helpers are provided.
 | `data/` | output goes here (`.jld2`, `.png`, `.gif`) |
 
 ## Quick start
-## 🚀 Quick start (fresh machine)
+## Quick start (fresh machine)
 
 ```bash
 # 1. grab the code
