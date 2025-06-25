@@ -71,7 +71,7 @@ function build_params(;N=20, k0=2e-4, lambda_factor=2.0,
                        F_amp=1.0)
     k = k0 .* (lambda_factor .^ (0:N-1))
     F = zeros(ComplexF64, N)
-    F[1] = F_amp; F[2] = -F_amp          # antisymmetric forcing
+    F[1] = F_amp; F[2] = -F_amp;          # antisymmetric forcing
     SabraParams(N, k, viscosity, a, b, c, F)
 end
 
@@ -106,7 +106,7 @@ function step_rk4!(u, k1, k2, k3, k4, tmp, pars, dt)
     sabra_rhs!(k1, u, pars)
     @. tmp = u + 0.5*dt*k1; sabra_rhs!(k2, tmp, pars)
     @. tmp = u + 0.5*dt*k2; sabra_rhs!(k3, tmp, pars)
-    @. tmp = u + dt*k3;    sabra_rhs!(k4, tmp, pars)
+    @. tmp = u + dt*k3;     sabra_rhs!(k4, tmp, pars)
     @. u += (dt/6)*(k1 + 2k2 + 2k3 + k4)
 end
 
