@@ -81,6 +81,31 @@ function sabra_rhs!(du::Vector{ComplexF64}, u::Vector{ComplexF64}, pars::SabraPa
     N, k, nu = pars.N, pars.k, pars.viscosity
     a, b, c, F = pars.a, pars.b, pars.c, pars.F
 
+    nonlin = sabra_nonlin(u, pars)  # nonlinear term
+    @. du = nonlin - nu*k.^2 *u + F # viscous and forcing term
+
+    # @inbounds for n in 1:N
+    #     # neighbour shortcuts (zero outside 1…N)
+    #     u_nm1 = n > 1   ? u[n-1] : 0+0im
+    #     u_nm2 = n > 2   ? u[n-2] : 0+0im
+    #     u_np1 = n < N   ? u[n+1] : 0+0im
+    #     u_np2 = n < N-1 ? u[n+2] : 0+0im
+
+    #     term_forward  = (n <= N-2)             ? a * k[n+1] * u_np2 * conj(u_np1) : 0+0im
+    #     term_mixed    = (n >= 2 && n <= N-1)   ? b * k[n]   * u_np1 * conj(u_nm1) : 0+0im
+    #     term_backward = (n >= 3)               ? c * k[n-1] * u_nm1 * u_nm2       : 0+0im
+
+    #     du[n] = non_lin - nu * k[n]^2 * u[n] + F[n]                            # forcing
+    # end
+end
+
+function sabra_nonlin(u::Vector{ComplexF64}, pars::SabraParams)
+    N, k = pars.N, pars.k
+    a, b, c = pars.a, pars.b, pars.c
+
+    nonlin = similar(u)  # allocate output vector
+
+
     @inbounds for n in 1:N
         # neighbour shortcuts (zero outside 1…N)
         u_nm1 = n > 1   ? u[n-1] : 0+0im
@@ -92,9 +117,10 @@ function sabra_rhs!(du::Vector{ComplexF64}, u::Vector{ComplexF64}, pars::SabraPa
         term_mixed    = (n >= 2 && n <= N-1)   ? b * k[n]   * u_np1 * conj(u_nm1) : 0+0im
         term_backward = (n >= 3)               ? c * k[n-1] * u_nm1 * u_nm2       : 0+0im
 
-        du[n] = im * (term_forward + term_mixed - term_backward) - nu * k[n]^2 * u[n] + F[n]                            # forcing
+        nonlin[n] = im * (term_forward + term_mixed - term_backward)
     end
-end
+    return nonlin
+end 
 
 # ───────────────────── Explicit integrators ──────────────────────────
 # Minimal, readable step routines students can inspect.
@@ -135,8 +161,12 @@ function run_simulation(pars::SabraParams; T=10.0, dt=1e-6, method::Symbol=:RK4,
     t_vec = Vector{Float64}(undef, n_save)
     u_vec = Vector{Vector{ComplexF64}}(undef, n_save)
 
-    tmp = similar(u);  k1 = k2 = k3 = k4 = similar(u)  # work buffers
-
+    tmp = similar(u);
+    #   k1 = k2 = k3 = k4 = similar(u)  # work buffers
+    k1 = similar(u)
+    k2 = similar(u)
+    k3 = similar(u)
+    k4 = similar(u)
     t_vec[1] = 0.0;  u_vec[1] = copy(u);  save_idx = 2
     @printf("%s integration, dt = %.1e, steps = %d\n", method, dt, n_steps)
 
@@ -183,11 +213,11 @@ end
 function plot_helicity(t, u_vec, pars)
     @eval using Plots
     helicities = [compute_helicity(u_vec[i], pars)  for i in 1:length(t)]
-    helicities = min.(helicities, -1e-16)
-    plot(t, -helicities; 
+    helicities = max.(abs.(helicities), 1e-16)
+    plot(t, helicities; 
         xlabel="t",
         yscale= :log10,
-        ylabel="-H(t)",
+        ylabel="H(t)",
         # lw=2,
         title="Total helicity"
         )
